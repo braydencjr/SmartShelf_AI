@@ -6,7 +6,14 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
 
-from models.forecasting import forecast_sales, arima_forecast, sarimax_forecast, ltm_forecast, calculate_forecast_accuracy
+
+from models.forecasting_advanced import (
+    prophet_forecast,
+    xgboost_forecast,
+    optimized_sarimax_forecast,
+    smart_ensemble_forecast,
+    calculate_forecast_accuracy
+)
 from ai.insights_generator import generate_forecast_insights
 
 st.set_page_config(page_title="Forecasting", page_icon="🔮", layout="wide")
@@ -28,8 +35,14 @@ st.sidebar.markdown("## 🎛️ Forecast Settings")
 
 forecast_method = st.sidebar.selectbox(
     "Forecasting Method",
-    ["Exponential Smoothing", "ARIMA", "SARIMAX", "Linear Trend Model"],
-    help="Choose the forecasting model. Exponential Smoothing: trends & seasonality. ARIMA: stationary data. SARIMAX: seasonal ARIMA. Linear Trend Model: simple trend projection.")
+    [
+        "Prophet",
+        "Smart Ensemble",
+        "XGBoost",
+        "SARIMAX",
+    ],
+    help="Smart Ensemble: Uses top 3-4 models with validation. Prophet: Great for trends/seasonality. XGBoost: Advanced ML. Optimized models: Hyperparameter tuned."
+)
 
 forecast_days = st.sidebar.slider(
     "Forecast Period (days)",
@@ -46,19 +59,20 @@ show_historical = st.sidebar.checkbox("Show Historical Data", value=True, help="
 if st.sidebar.button("🔮 Generate Forecast", type="primary", use_container_width=True):
     with st.spinner("Generating forecast... This may take a moment."):
         
-        if forecast_method == "Exponential Smoothing": 
-            forecast_df, model = forecast_sales(daily_df, periods=forecast_days) 
-        elif forecast_method == "ARIMA": 
-            forecast_df = arima_forecast(daily_df, periods=forecast_days) 
-        elif forecast_method == "SARIMAX": 
-            forecast_df = sarimax_forecast(daily_df, periods=forecast_days) 
-        elif forecast_method == "Linear Trend Model": 
-            forecast_df = ltm_forecast(daily_df, periods=forecast_days) 
-        if forecast_df is not None: 
-            st.session_state['forecast_df'] = forecast_df 
-            st.session_state['forecast_method'] = forecast_method 
-            st.success(f"✅ Forecast generated successfully using {forecast_method}!") 
-        else: 
+        if forecast_method == "Smart Ensemble":
+            forecast_df = smart_ensemble_forecast(daily_df, periods=forecast_days)
+        elif forecast_method == "Prophet":
+            forecast_df = prophet_forecast(daily_df, periods=forecast_days)
+        elif forecast_method == "XGBoost":
+            forecast_df = xgboost_forecast(daily_df, periods=forecast_days)
+        elif forecast_method == "SARIMAX":
+            forecast_df = optimized_sarimax_forecast(daily_df, periods=forecast_days)
+        
+        if forecast_df is not None:
+            st.session_state['forecast_df'] = forecast_df
+            st.session_state['forecast_method'] = forecast_method
+            st.success(f"✅ Forecast generated successfully using {forecast_method}!")
+        else:
             st.error("❌ Forecast generation failed. Please check your data.")
 
 # Display forecast
@@ -170,14 +184,15 @@ if 'forecast_df' in st.session_state:
         test_df = daily_df.iloc[-test_days:]
         
         try:
-            if method == "Exponential Smoothing": 
-                test_forecast, _ = forecast_sales(train_df, periods=test_days) 
-            elif method == "ARIMA": 
-                test_forecast = arima_forecast(train_df, periods=test_days) 
-            elif method == "SARIMAX": 
-                test_forecast = sarimax_forecast(train_df, periods=test_days) 
-            elif method == "Linear Trend Model": 
-                test_forecast = ltm_forecast(train_df, periods=test_days)
+            if method == "Smart Ensemble":
+                test_forecast = smart_ensemble_forecast(train_df, periods=test_days)
+            elif method == "Prophet":
+                test_forecast = prophet_forecast(train_df, periods=test_days)
+            elif method == "XGBoost":
+                test_forecast = xgboost_forecast(train_df, periods=test_days)
+            elif method == "SARIMAX":
+                test_forecast = optimized_sarimax_forecast(train_df, periods=test_days)
+            
             
             if test_forecast is not None and len(test_forecast) == len(test_df):
                 accuracy = calculate_forecast_accuracy(
