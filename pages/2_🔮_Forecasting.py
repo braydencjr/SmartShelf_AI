@@ -2,8 +2,10 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import sys
+import json
 from pathlib import Path
 
+# Assuming models and AI helper files are located correctly
 sys.path.append(str(Path(__file__).parent.parent))
 
 
@@ -14,7 +16,7 @@ from models.forecasting_advanced import (
     smart_ensemble_forecast,
     calculate_forecast_accuracy
 )
-from ai.insights_generator import generate_forecast_insights
+from ai.insights_generator import generate_forecast_insights, generate_custom_explanation
 
 st.set_page_config(page_title="Forecasting", page_icon="🔮", layout="wide")
 
@@ -235,15 +237,83 @@ if 'forecast_df' in st.session_state:
     st.markdown("---")
     # AI Insights
     st.markdown("## 💡 AI-Powered Insights")
-    
+
+if 'forecast_df' in st.session_state:
+    forecast_df = st.session_state['forecast_df']
+    daily_df = st.session_state['daily_df']
+
     if st.button("Generate AI Analysis", type="primary"):
-        with st.spinner("AI is analyzing the forecast..."):
-            insights = generate_forecast_insights(
-                forecast_df,
-                daily_df['daily_sales'].mean()
-            )
-            
-            st.markdown(insights)
+
+    # 1️⃣ Show the forecast chart first
+     fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=forecast_df['Date'],
+        y=forecast_df['forecasted_sales'],
+        mode='lines+markers',
+        name='Forecasted Sales'
+    ))
+    fig.update_layout(height=300, margin=dict(t=20, b=20, l=20, r=20))
+    st.plotly_chart(fig, use_container_width=True)
+
+    # 2️⃣ Call AI for bullet points
+    with st.spinner("AI is analyzing the forecast..."):
+        ai_response = generate_forecast_insights(
+            forecast_df,
+            daily_df['daily_sales'].mean(),
+            df=st.session_state.get('df', None)
+        )
+
+        if ai_response:
+            ai_response = ai_response.strip()
+            if ai_response.startswith("```") and ai_response.endswith("```"):
+                ai_response = '\n'.join(ai_response.split('\n')[1:-1]).strip()
+
+        # 3️⃣ Parse JSON safely
+        bullets_data = []
+        try:
+            raw_data = json.loads(ai_response)
+
+            # Normalize: ensure each item is a dict with required keys
+            for item in raw_data:
+                if isinstance(item, dict):
+                    bullets_data.append({
+                        "bullet": item.get("text", "Legacy Insight"),
+                        "category": item.get("category", "Insight"),
+                        "graph_suggestion": item.get("graph_suggestion", "Full Forecast")
+                    })
+                elif isinstance(item, str):
+                    bullets_data.append({
+                        "bullet": item,
+                        "category": "Insight",
+                        "graph_suggestion": "Full Forecast"
+                    })
+        except json.JSONDecodeError:
+            st.error("❌ AI returned invalid JSON.")
+            st.code(ai_response, language='json')
+            bullets_data = []
+
+        # 4️⃣ Display bullets
+        for bullet_item in bullets_data:
+            bullet_text = bullet_item["bullet"]
+            bullet_category = bullet_item["category"]
+            bullet_graph = bullet_item["graph_suggestion"]
+
+            icon = {
+                "Observation": "👁️",
+                "Potential Risk": "⚠️",
+                "Recommended Action": "🚀",
+                "Fallback": "💬",
+                "Error": "❌",
+                "Insight": "💡"
+            }.get(bullet_category, "💡")
+
+            with st.expander(f"{icon} **{bullet_category}**: {bullet_text} 🔍"):
+                detailed_explanation = generate_custom_explanation(bullet_text, forecast_df)
+                st.markdown(detailed_explanation)
+                st.markdown("---")
+                st.caption(f"Chart Context: {bullet_graph}")
+
+
     st.markdown("---")
     # Forecast table
     st.markdown("## 📋 Detailed Forecast Data")

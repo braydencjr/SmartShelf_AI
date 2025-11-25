@@ -115,8 +115,8 @@ with tab1:
             top_prods = top_products(df, n=5)
             anomalies = detect_anomalies_zscore(st.session_state['daily_df'])
             
-            # Generate summary
-            summary = generate_executive_summary(kpis, top_prods, anomalies)
+            # Generate summary with discount context
+            summary = generate_executive_summary(kpis, top_prods, anomalies, df=df)
             
             st.session_state['executive_summary'] = summary
             st.success("✅ Executive summary generated!")

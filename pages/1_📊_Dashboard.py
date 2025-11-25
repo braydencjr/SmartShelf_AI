@@ -14,6 +14,11 @@ from utils.visualizations import (
     create_category_pie_chart, create_hourly_heatmap
 )
 
+from utils.discount_analysis import (
+    calculate_discount_effect, analyze_discount_by_day,
+    analyze_product_discount_sensitivity, get_discount_insights_summary
+)
+
 st.set_page_config(page_title="Dashboard", page_icon="📊", layout="wide")
 
 st.title("📊 Personal Intelligence Dashboard")
@@ -150,6 +155,152 @@ st.info("""
 - Smarter inventory planning
 - Optimize marketing campaigns around high-traffic periods
 """)
+
+# ============ DISCOUNT ANALYSIS SECTION ============
+st.markdown("---")
+st.markdown("## 🎯 Discount Impact Analysis")
+
+try:
+    discount_data = calculate_discount_effect(df_filtered)
+    discount_insights = get_discount_insights_summary(df_filtered)
+    product_discount = analyze_product_discount_sensitivity(df_filtered)
+    day_discount = analyze_discount_by_day(df_filtered)
+    
+    # Key discount metrics
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric(
+            "Quantity Lift",
+            f"{discount_data['quantity_lift_pct']:.1f}%",
+            help="Average additional items sold when discounted vs normal price"
+        )
+    
+    with col2:
+        st.metric(
+            "Revenue Impact",
+            f"{discount_data['revenue_impact_pct']:.1f}%",
+            help="Impact on average revenue per transaction"
+        )
+    
+    with col3:
+        st.metric(
+            "Discount Penetration",
+            f"{discount_data['discount_sales_pct']:.1f}%",
+            help="Percentage of total sales that included discounts"
+        )
+    
+    with col4:
+        # Effectiveness assessment
+        if discount_data['quantity_lift_pct'] > 15 and discount_data['revenue_impact_pct'] > 0:
+            effectiveness = "🟢 Highly Effective"
+        elif discount_data['quantity_lift_pct'] > 5 or discount_data['revenue_impact_pct'] > 0:
+            effectiveness = "🟡 Moderate"
+        else:
+            effectiveness = "🔴 Weak"
+        st.metric("Effectiveness", effectiveness)
+    
+    # Detailed breakdown tabs
+    discount_tab1, discount_tab2, discount_tab3, discount_tab4 = st.tabs(
+        ["📊 Volume & Revenue", "📅 By Day", "🏆 Top Products", "⚠️ Problem Products"]
+    )
+    
+    with discount_tab1:
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("### With Discount")
+            st.metric("Avg Qty", f"{discount_data['discounted']['avg_quantity']:.2f} kg")
+            st.metric("Avg Revenue", f"¥{discount_data['discounted']['avg_revenue']:,.2f}")
+            st.metric("Price", f"¥{discount_data['discounted']['avg_price']:.2f}/kg")
+            st.metric("Transactions", f"{int(discount_data['discounted']['transaction_count']):,}")
+        
+        with col2:
+            st.markdown("### Without Discount")
+            st.metric("Avg Qty", f"{discount_data['normal']['avg_quantity']:.2f} kg")
+            st.metric("Avg Revenue", f"¥{discount_data['normal']['avg_revenue']:,.2f}")
+            st.metric("Price", f"¥{discount_data['normal']['avg_price']:.2f}/kg")
+            st.metric("Transactions", f"{int(discount_data['normal']['transaction_count']):,}")
+    
+    with discount_tab2:
+        st.markdown("### Best & Worst Days for Discounts")
+        day_lift = day_discount['day_lift'].sort_values('quantity_lift_pct', ascending=False)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.success(f"🟢 Best Day: {discount_insights['best_discount_day']}")
+            st.metric("Quantity Lift", f"+{discount_insights['best_discount_day_lift']:.1f}%")
+        
+        with col2:
+            st.error(f"🔴 Worst Day: {discount_insights['worst_discount_day']}")
+            st.metric("Quantity Lift", f"{discount_insights['worst_discount_day_lift']:.1f}%")
+        
+        st.markdown("### Daily Breakdown")
+        st.dataframe(day_lift.sort_values('quantity_lift_pct', ascending=False), 
+                     use_container_width=True, hide_index=True)
+    
+    with discount_tab3:
+        st.markdown("### 🎉 Products That Explode with Discounts")
+        st.markdown("These are your volume drivers - discount them strategically")
+        
+        top_products_discount = product_discount.head(5).copy()
+        top_products_discount = top_products_discount[[
+            'without_discount', 'with_discount', 'quantity_lift_pct',
+            'revenue_with_discount', 'revenue_impact_pct', 'transactions_with_discount'
+        ]].round(2)
+        
+        top_products_discount.columns = [
+            'Qty w/o Discount (kg)', 'Qty w/ Discount (kg)', 'Lift %',
+            'Avg Revenue (¥)', 'Revenue Impact %', 'Transactions'
+        ]
+        
+        st.dataframe(top_products_discount, use_container_width=True)
+        
+        with st.expander("Strategy"):
+            st.write("""
+            ✅ *What to do:*
+            - These products show strong volume response to discounts
+            - Use discounts on these items during slow periods to drive traffic
+            - Bundle them with low-discount items for margin protection
+            """)
+    
+    with discount_tab4:
+        st.markdown("### ⚠️ Products Where Discounts Hurt Revenue")
+        st.markdown("These don't need discounts - they sell well at full price")
+        
+        worst_products_discount = product_discount.tail(5).copy()
+        worst_products_discount = worst_products_discount[[
+            'without_discount', 'with_discount', 'quantity_lift_pct',
+            'revenue_with_discount', 'revenue_impact_pct', 'transactions_with_discount'
+        ]].round(2)
+        
+        worst_products_discount.columns = [
+            'Qty w/o Discount (kg)', 'Qty w/ Discount (kg)', 'Lift %',
+            'Avg Revenue (¥)', 'Revenue Impact %', 'Transactions'
+        ]
+        
+        st.dataframe(worst_products_discount, use_container_width=True)
+        
+        with st.expander("Strategy"):
+            st.write("""
+            🚫 *What NOT to do:*
+            - Avoid discounting these products - they show weak or negative response
+            - Customers buy them at full price anyway
+            - Discounts only reduce margin without lifting volume
+            - Save discounts for true volume drivers
+            """)
+    
+    st.success(f"""
+    *💡 Key Insight:* {
+        'Discounts are highly effective - they drive volume without hurting revenue!' if discount_data['quantity_lift_pct'] > 10 and discount_data['revenue_impact_pct'] > 0
+        else 'Discounts drive volume but reduce per-transaction revenue. Use strategically on high-margin products only.' if discount_data['quantity_lift_pct'] > 10
+        else 'Discounts show weak volume lift. Reconsider discount strategy - they may not be worth the margin loss.'
+    }
+    """)
+
+except Exception as e:
+    st.warning(f"Discount analysis unavailable: {e}")
 
 # Detailed Tables
 st.markdown("## 📋 Instant Table Reports")
