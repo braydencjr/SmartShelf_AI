@@ -18,7 +18,7 @@ def initialize_gemini():
         print(f"Gemini initialization error: {e}")
         return None
 
-def generate_executive_summary(kpis, top_products, anomalies):
+def generate_executive_summary(kpis, top_products, anomalies, df=None):
     model = initialize_gemini()
     
     if model is None:
@@ -316,16 +316,25 @@ Instructions:
         return f"Error generating insight: {e}"
 
 
-def generate_custom_explanation(bullet_point, forecast_df):
+def generate_custom_explanation(bullet_point, forecast_df, df=None):
+    """
+    Generate a detailed explanation for a sales forecast bullet point.
+    Returns plain text following strict instructions.
+    """
     model = initialize_gemini()
     if model is None:
         return "AI insights unavailable."
 
-    prompt = f"""
-Explain this sales forecast bullet point clearly and concisely for business stakeholders:
-- Bullet: {bullet_point}
-{discount_context}
+    # --- Generate discount context if available ---
+    discount_context = ""
+    if df is not None and 'Discount (Yes/No)' in df.columns:
+        try:
+            discount_context = "\nRelevant Discount Context:\n" + get_discount_context_for_ai(df)
+        except:
+            discount_context = ""
 
+    # Instructions text you want
+    instructions_text = """
 Instructions:
 1. Use plain text only. Do not return JSON.
 2. Avoid filler phrases like "Let's break down..."
@@ -342,23 +351,17 @@ Instructions:
     - Use tables for comparisons or numeric summaries
     - Use short bullets (max 3 sentences per bullet)
 """
+
+    prompt = f"""
+Explain this sales forecast bullet point clearly and concisely for business stakeholders:
+- Bullet: {bullet_point}
+{discount_context}
+
+{instructions_text}
+"""
+
     try:
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
         return f"Error: {e}"
-    
-
-def enrich_anomaly_row(anomaly_row, country='US'):
-    date_val = pd.to_datetime(anomaly_row['Date'])
-    anomaly_row['day_of_week'] = date_val.day_name()
-    anomaly_row['is_weekend'] = date_val.weekday() >= 5
-    anomaly_row['month'] = date_val.month
-
-    # Check if date is a public holiday
-    holiday_dates = holidays.CountryHoliday(country)
-    anomaly_row['holiday_name'] = holiday_dates.get(date_val, None)
-    
-    # Simple season flags
-    anomaly_row['is_holiday_season'] = anomaly_row['month'] == 12
-    return anomaly_row

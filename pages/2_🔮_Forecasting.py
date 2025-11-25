@@ -311,7 +311,6 @@ if 'forecast_df' in st.session_state:
                 detailed_explanation = generate_custom_explanation(bullet_text, forecast_df)
                 st.markdown(detailed_explanation)
                 st.markdown("---")
-                st.caption(f"Chart Context: {bullet_graph}")
 
 
     st.markdown("---")
