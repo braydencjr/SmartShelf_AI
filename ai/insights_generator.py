@@ -365,3 +365,27 @@ Explain this sales forecast bullet point clearly and concisely for business stak
         return response.text.strip()
     except Exception as e:
         return f"Error: {e}"
+
+
+def enrich_anomaly_row(row):
+    """
+    Add useful context: day of week, weekend flag, holiday name, holiday season.
+    """
+    date_val = row['Date']
+
+    # Day of week
+    row['day_of_week'] = date_val.strftime('%A')
+
+    # Weekend?
+    row['is_weekend'] = date_val.weekday() >= 5
+
+    # Holiday detection (Japan example or use your country)
+    jp_holidays = holidays.Japan()
+
+    holiday_name = jp_holidays.get(date_val)
+    row['holiday_name'] = holiday_name if holiday_name else ""
+
+    # Holiday season check (Dec)
+    row['is_holiday_season'] = date_val.month == 12
+
+    return row
