@@ -1,7 +1,7 @@
 import os
 
 # Application Settings
-APP_TITLE = "Enterprise Predictive Analytics SaaS"
+APP_TITLE = "SmartShelf AI"
 APP_ICON = "📊"
 
 # Data Settings
