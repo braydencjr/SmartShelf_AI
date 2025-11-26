@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 import sys
 import json
 from pathlib import Path
+import textwrap
 
 # Assuming models and AI helper files are located correctly
 sys.path.append(str(Path(__file__).parent.parent))
@@ -20,7 +21,7 @@ from ai.insights_generator import generate_forecast_insights, generate_custom_ex
 
 st.set_page_config(page_title="Forecasting", page_icon="🔮", layout="wide")
 
-st.title("🔮 Sales Crystal Ball")
+st.title("Business Insight Forecast")
 st.markdown("### Peeking Into the Future 👀")
 
 # Check for data
@@ -32,50 +33,73 @@ if 'df' not in st.session_state:
 
 daily_df = st.session_state['daily_df']
 
-# Sidebar controls
-st.sidebar.markdown("## 🎛️ Forecast Settings")
 
-forecast_method = st.sidebar.selectbox(
-    "Forecasting Method",
-    [
-        "Prophet",
-        "Smart Ensemble",
-        "XGBoost",
-        "SARIMAX",
-    ],
-    help="Smart Ensemble: Uses top 3-4 models with validation. Prophet: Great for trends/seasonality. XGBoost: Advanced ML. Optimized models: Hyperparameter tuned."
-)
+with st.container():
+    col1, col2 = st.columns([2,1])
 
-forecast_days = st.sidebar.slider(
-    "Forecast Period (days)",
-    min_value=1,
-    max_value=30,
-    value=7,
-    step=1
-)
+    # -------------------------
+    # LEFT SIDE (SLIDER + BUTTON)
+    # -------------------------
+    with col1:
 
-show_confidence = st.sidebar.checkbox("Show Expected Intervals", value=True, help="Displays a shaded area around the forecast showing the likely range of sales.")
-show_historical = st.sidebar.checkbox("Show Historical Data", value=True, help="Displays past sales on the chart for comparison with the forecast.")
+        # Forecast period slider
+        forecast_days = st.slider(
+            "Forecast Period (days)",
+            min_value=1,
+            max_value=30,
+            value=7,
+            step=1
+        )
 
-# Generate forecast button
-if st.sidebar.button("🔮 Generate Forecast", type="primary", use_container_width=True):
-    with st.spinner("Generating forecast... This may take a moment."):
-        
-        if forecast_method == "Smart Ensemble":
-            forecast_df = smart_ensemble_forecast(daily_df, periods=forecast_days)
-        elif forecast_method == "Prophet":
-            forecast_df = prophet_forecast(daily_df, periods=forecast_days)
-        elif forecast_method == "XGBoost":
-            forecast_df = xgboost_forecast(daily_df, periods=forecast_days)
-        elif forecast_method == "SARIMAX":
-            forecast_df = optimized_sarimax_forecast(daily_df, periods=forecast_days)
-        
-        if forecast_df is not None:
-            st.session_state['forecast_df'] = forecast_df
-            st.session_state['forecast_method'] = forecast_method
-            st.success(f"✅ Forecast generated successfully using {forecast_method}!")
-        else:
-            st.error("❌ Forecast generation failed. Please check your data.")
+        # --- 3-column row: checkbox, checkbox, button ---
+        c1, c2, c3 = st.columns([1, 1, 1.2])
+
+        with c1:
+            show_confidence = st.checkbox(
+                "Show Expected Intervals",
+                value=True,
+                help="Displays a shaded area showing expected range."
+            )
+
+        with c2:
+            show_historical = st.checkbox(
+                "Show Historical Data",
+                value=True,
+                help="Displays past sales."
+            )
+
+        with c3:
+            st.markdown("<div style='height: 12px'></div>", unsafe_allow_html=True)
+            if st.button("🔮 Generate Forecast", type="primary", use_container_width=True):
+                with st.spinner("Generating forecast... This may take a moment."):
+                    forecast_df = optimized_sarimax_forecast(daily_df, periods=forecast_days)
+
+                    if forecast_df is not None:
+                        st.session_state['forecast_df'] = forecast_df
+                        st.session_state['forecast_method'] = "SARIMAX"
+                        st.success("✅ Forecast generated successfully using SARIMAX!")
+                    else:
+                        st.error("❌ Forecast generation failed. Please check your data.")
+
+    # -------------------------
+    # RIGHT SIDE (FORECAST PARAMETER CARD)
+    # -------------------------
+    # EVERYTHING MUST BE INSIDE THIS BLOCK
+    with col2:
+        # st.markdown("<br>", unsafe_allow_html=True) # REMOVED for upward alignment
+
+        # Native Streamlit Container for the card
+        with st.container(border=True): 
+            st.markdown("#### 📘 **Forecast Parameters**")
+            
+            # Use st.markdown or st.write for content lines
+            st.markdown(f"**Forecast Horizon:** {forecast_days} days") # Hardcoding 7 days based on image
+            st.markdown("**Confidence Interval:** 95%")
+            st.markdown("**Data Filter Applied:** All Products")
+
+            # Disclaimer 
+            st.caption("⚠️ Historical patterns do not guarantee future performance.")
+        # Removed the problematic st.markdown(html_card, ...) line
 
 # Display forecast
 if 'forecast_df' in st.session_state:
@@ -329,42 +353,6 @@ if 'forecast_df' in st.session_state:
             use_container_width=True
         )
     
-
-else:
-    st.info("👆 Pick Forecast Period in the sidebar, and click 'Generate Forecast' to start the magic")
-    
-    st.markdown("---")
-    st.markdown("<h2>Choose your magician 🧙‍♂️</h1>", unsafe_allow_html=True)
-    
-    # Info cards
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("""
-        ### 📈 Exponential Smoothing
-        - Good for trends & seasonality
-        - Quick and smooth forecasts
-        """)
-
-        st.markdown("""
-        ### 📊 ARIMA
-        - Works well on stationary data
-        - Handles tricky patterns
-        """)
-
-    with col2:
-        st.markdown("""
-        ### 🔄 SARIMAX
-        - Like ARIMA but handles extra factors (like holidays)
-        - Great for seasonal data
-        """)
-
-        st.markdown("""
-        ### 📉 Linear Trend Model
-        - Simple straight-line forecasts
-        - Good for seeing general direction
-        """)
-
 
 # Footer
 st.markdown("---")
