@@ -54,7 +54,7 @@ with col2:
     st.button("📁 Upload CSV", on_click=toggle_upload, use_container_width=True)
 
 # Main content
-st.markdown("<h1 style='color:#000000'class='main-header'>🛒 SmartShelf AI</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='color:#667eea'class='main-header'>🛒 SmartShelf AI</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size: 1.2rem; color: #666; margin-bottom: 2rem;'>See what's hot. Predict what's next.</p>", unsafe_allow_html=True)
 
 # Show upload popup if toggled

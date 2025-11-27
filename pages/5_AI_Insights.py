@@ -22,7 +22,7 @@ st.markdown("### Gemini AI generates actionable recommendations from your data")
 if 'df' not in st.session_state:
     st.warning("⚠️ No data loaded. Please go to the main page and load data first.")
     if st.button("← Go to Main Page"):
-        st.switch_page("app.py")
+        st.switch_page("Main_Page.py")
     st.stop()
 
 df = st.session_state['df']
