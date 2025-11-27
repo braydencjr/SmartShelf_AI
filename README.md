@@ -96,11 +96,8 @@ enterprise-analytics-saas/
 pip install -r requirements.txt
 ```
 
-4. **Set up your data:**
-   - Place `annex1.csv` and `annex2.csv` in the `data/` folder
-   - Or use the file uploader in the app
 
-5. **Set up Gemini API (for AI features):**
+4. **Set up Gemini API (for AI features):**
    
    Get a free API key from: https://makersuite.google.com/app/apikey
    
@@ -118,12 +115,12 @@ pip install -r requirements.txt
    echo "GEMINI_API_KEY=your_api_key_here" > .env
    ```
 
-6. **Run the application:**
+5. **Run the application:**
 ```bash
 streamlit run Main_Page.py
 ```
 
-7. **Open your browser:**
+6. **Open your browser:**
    - The app will open automatically at `http://localhost:8501`
    - If not, navigate to that URL manually
 
