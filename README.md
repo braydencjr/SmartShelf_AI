@@ -44,9 +44,7 @@ The system supports:
 - Product master tables
 - Incremental updates over time
 
-CSV upload is optional and used only for testing.
-
----
+Upload CSV to update on each month's sales
 
 ## 🚀 Quick Start
 
