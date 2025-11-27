@@ -23,7 +23,7 @@ st.markdown("### Data-driven recommendations for inventory, pricing, and resourc
 if 'df' not in st.session_state:
     st.warning("⚠️ No data loaded. Please go to the main page and load data first.")
     if st.button("← Go to Main Page"):
-        st.switch_page("app.py")
+        st.switch_page("Main_Page.py")
     st.stop()
 
 df = st.session_state['df']
@@ -47,14 +47,6 @@ div[data-baseweb="tab"] {
 </style>
 """, unsafe_allow_html=True)
 
-# Sidebar
-st.sidebar.markdown("## ⚙️ Optimization Tools")
-st.sidebar.markdown("""
-**Available Optimizations:**
-- 📦 Inventory Management
-- 💰 Pricing Strategy
-- 📊 Resource Allocation
-""")
 
 # Tabs
 tab1, tab2, tab3, tab4 = st.tabs([
@@ -66,29 +58,60 @@ tab1, tab2, tab3, tab4 = st.tabs([
 
 # Tab 1: Inventory Optimization
 with tab1:
-    st.markdown("## 📦 Inventory Optimization")
-    st.markdown("Optimize stock levels to minimize costs while meeting demand.")
+    # -----------------------------------------------------
+    # 💡 CSS to reduce vertical spacing (MUST USE HTML) 💡
+    # -----------------------------------------------------
+    st.markdown("""
+    <style>
+    /* Target the small instruction text below the input */
+    .tight-instruction {
+        margin-top: -15px !important; /* Move it up towards the input */
+        margin-bottom: 5px !important; /* Reduce space below it */
+        font-size: 14px; /* Optional: adjust size */
+    }
+    /* Target the button below the instruction */
+    div.stButton {
+        margin-top: -10px !important; /* Move the button up */
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    # -----------------------------------------------------
+
+    # 1. Define columns for the header and info box
+    header_col, info_col = st.columns([2, 1])
     
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.info("""
+    with header_col:
+        # Combine the heading and the description
+        st.markdown("## 📦 Inventory Optimization") 
+        st.markdown("Optimize stock levels to minimize costs while meeting demand.")
+        
+        # This is the single, correct location for the input:
+        lead_time = st.number_input(
+            "Supplier Delivery Time (days)", 
+            min_value=1, max_value=30, value=7,
+            help="Average number of days your supplier takes to deliver an order. Higher = more stock needed to avoid stockouts."
+        )
+
+        # 💡 Apply CSS class to the instruction text
+        st.markdown(
+         """
+         <p class='tight-instruction'>
+            *Select the supplier's delivery time to evaluate if your stock meets demand.*
+         </p>
+         """, unsafe_allow_html=True
+        )
+
+        with info_col:
+         st.info("""
         **What this does:**
         - Calculates optimal stock levels per product
         - Identifies reorder points
         - Prioritizes products by revenue impact
         - Prevents stockouts and overstock
         """)
-    
-    with col2:
-        lead_time = st.number_input(
-        "Supplier Delivery Time (days)", 
-        min_value=1, max_value=30, value=7,
-        help="Average number of days your supplier takes to deliver an order. Higher = more stock needed to avoid stockouts."
-        )
-
         
-
+    # Input element row starts below the main title/info block
+    col1, col2 = st.columns([2, 1])
     
     if st.button("🔧 Calculate Inventory Optimization", type="primary"):
         with st.spinner("Optimizing inventory..."):

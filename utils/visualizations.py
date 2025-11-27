@@ -64,16 +64,31 @@ def create_category_pie_chart(df):
     return fig
 
 def create_hourly_heatmap(df):
-    df['Hour'] = pd.to_datetime(df['Time'], format='mixed').dt.hour
+    # Handle Time column safely
+    if pd.api.types.is_timedelta64_dtype(df['Time']):
+        # MySQL TIME type → timedelta → extract hours
+        df['Hour'] = df['Time'].dt.components['hours']
+    else:
+        # CSV string or datetime
+        df['Hour'] = pd.to_datetime(df['Time'], errors='coerce').dt.hour
+
+    # Ensure Date column is datetime
+    if not pd.api.types.is_datetime64_any_dtype(df[DATE_COL]):
+        df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors='coerce')
+
     df['DayOfWeek'] = df[DATE_COL].dt.day_name()
-    
+
+    # Aggregate sales by day & hour
     heatmap_data = df.groupby(['DayOfWeek', 'Hour'])[VALUE_COL].sum().reset_index()
     heatmap_pivot = heatmap_data.pivot(index='DayOfWeek', columns='Hour', values=VALUE_COL)
-    
+
     # Reorder days
     days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     heatmap_pivot = heatmap_pivot.reindex(days_order)
-    
+
+    # Fill missing hours with 0
+    heatmap_pivot = heatmap_pivot.fillna(0)
+
     fig = px.imshow(
         heatmap_pivot,
         labels=dict(x="Hour of Day", y="Day of Week", color="Sales (RMB)"),
@@ -81,7 +96,7 @@ def create_hourly_heatmap(df):
         color_continuous_scale='RdYlGn',
         aspect='auto'
     )
-    
+
     fig.update_layout(height=400)
-    
+
     return fig

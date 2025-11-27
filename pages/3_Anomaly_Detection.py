@@ -17,14 +17,14 @@ from ai.insights_generator import generate_anomaly_explanation, generate_anomaly
 
 st.set_page_config(page_title="Anomaly Detection", page_icon="🚨", layout="wide")
 
-st.title("🚨 Anomaly Detection & Risk Alerts")
+st.title("🚨 Anomaly Detection")
 st.markdown("### Personal AI-powered risk spotter")
 
 # Ensure data loaded
 if 'df' not in st.session_state:
     st.warning("⚠️ No data loaded. Please go to the main page and load data first.")
     if st.button("← Go to Main Page"):
-        st.switch_page("app.py")
+        st.switch_page("Main_Page.py")
     st.stop()
 
 daily_df = st.session_state['daily_df']

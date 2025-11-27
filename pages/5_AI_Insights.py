@@ -16,13 +16,13 @@ from ai.insights_generator import (
 st.set_page_config(page_title="AI Insights", page_icon="💡", layout="wide")
 
 st.title("💡 AI-Powered Business Insights")
-st.markdown("### Gemini AI generates actionable recommendations from your data")
+st.markdown("### Tailored Actionable Recommendations")
 
 # Check for data
 if 'df' not in st.session_state:
     st.warning("⚠️ No data loaded. Please go to the main page and load data first.")
     if st.button("← Go to Main Page"):
-        st.switch_page("app.py")
+        st.switch_page("Main_Page.py")
     st.stop()
 
 df = st.session_state['df']
@@ -43,21 +43,12 @@ if model is None:
     **Alternative:** Use command line:
     ```bash
     export GEMINI_API_KEY="your_key_here"
-    streamlit run app.py
+    streamlit run Main_Page.py
     ```
     """)
     st.stop()
 
-# Sidebar
-st.sidebar.markdown("## 🤖 AI Features")
-st.sidebar.markdown("""
-**Available Insights:**
-- Executive Summary
-- Custom Q&A
-- Performance Analysis
-- Recommendations
-- Risk Assessment
-""")
+
 
 # Inject CSS to make tabs flex evenly
 st.markdown("""
@@ -91,7 +82,7 @@ with tab1:
     st.markdown("## 📊 AI-Generated Executive Summary")
     st.markdown("Get a comprehensive overview of your business performance powered by Gemini AI.")
     
-    col1, col2 = st.columns([3, 1])
+    col1, col2 = st.columns([2, 1])
     
     with col1:
         st.info("""
@@ -104,9 +95,18 @@ with tab1:
         """)
     
     with col2:
-        st.metric("Data Points", f"{len(df):,}")
-        st.metric("Date Range", f"{(df['Date'].max() - df['Date'].min()).days} days")
-        st.metric("Products", kpis['unique_products'])
+    # Use a container to group the data and provide separation
+      with st.container(border=True):
+        # 💡 NEW: Use compact markdown instead of st.metric 💡
+        
+        # Data Points
+        st.markdown(f"<p style='font-size:12px; margin-bottom:0;'>Number of Transactions</p> <p style='font-size:18px; font-weight:bold; margin-top:0;'>{len(df):,}</p>", unsafe_allow_html=True)
+        
+        # Date Range
+        st.markdown(f"<p style='font-size:12px; margin-bottom:0;'>Total Day of Operation</p> <p style='font-size:18px; font-weight:bold; margin-top:0;'>{(df['Date'].max() - df['Date'].min()).days} days</p>", unsafe_allow_html=True)
+        
+        # Products
+        st.markdown(f"<p style='font-size:12px; margin-bottom:0;'>Number of Products</p> <p style='font-size:18px; font-weight:bold; margin-top:0;'>{kpis['unique_products']}</p>", unsafe_allow_html=True)
     
     if st.button("🤖 Generate Executive Summary", type="primary", use_container_width=True):
         with st.spinner("AI is analyzing your business data... This may take 10-20 seconds."):
@@ -179,9 +179,7 @@ with tab2:
         if col.button(q_text, key=f"pref_q_{i}"):
             st.session_state['custom_question'] = q_text
 
-    # Text area for free typing. Uses session_state so quick-fill buttons work.
-    if 'custom_question' not in st.session_state:
-        st.session_state['custom_question'] = ""
+    # Text area for free typing. Uses session_state so quick-fill buttons work
 
     question = st.text_area(
         "Your question:",
