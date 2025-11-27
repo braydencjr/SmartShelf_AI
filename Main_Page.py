@@ -91,51 +91,51 @@ if use_upload:
                     df_products = pd.read_csv(uploaded_file1, encoding='utf-8-sig')
                     df_products.columns = df_products.columns.str.strip()
 
-                    # Clear old data
-                    cursor.execute("DELETE FROM product_info;")
-                    conn.commit()
-
-                    # Convert to tuples and insert
+                    # Convert to tuples
                     product_data = [tuple(x) for x in df_products.to_records(index=False)]
+
+                    # Insert new rows, ignore duplicates based on primary key
                     batch_insert(
                         cursor,
-                        "INSERT INTO product_info (`Item Code`, `Item Name`, `Category Code`, `Category Name`) VALUES (%s, %s, %s, %s)",
+                        """
+                        INSERT INTO product_info (`Item Code`, `Item Name`, `Category Code`, `Category Name`)
+                        VALUES (%s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE
+                            `Item Name`=VALUES(`Item Name`),
+                            `Category Code`=VALUES(`Category Code`),
+                            `Category Name`=VALUES(`Category Name`)
+                        """,
                         product_data
                     )
                     conn.commit()
                     st.success(f"✅ Loaded {len(df_products)} products into database!")
 
                 # ------------------ SALES CSV (Annex 2) ------------------
-                # ------------------ SALES CSV (Annex 2) ------------------
                 if use_sales:
                     uploaded_file2.seek(0)
                     df_sales = pd.read_csv(uploaded_file2, encoding='utf-8-sig')
                     df_sales.columns = df_sales.columns.str.strip()
-                 # Convert Item Codes to string
                     df_sales['Item Code'] = df_sales['Item Code'].astype(str)
 
-                    # Fetch product codes as strings
+                    # Ensure all Item Codes exist in product_info
                     cursor.execute("SELECT `Item Code` FROM product_info")
                     product_codes = {str(row[0]) for row in cursor.fetchall()}
-
                     missing_codes = set(df_sales['Item Code']) - product_codes
-
                     if missing_codes:
                         st.warning(f"❌ Cannot insert sales. Missing product info for Item Codes: {', '.join(missing_codes)}")
                         st.stop()
 
-
-                    # Clear old sales
-                    cursor.execute("DELETE FROM sales;")
-                    conn.commit()
-
-                    # Convert to tuples and insert
+                    # Convert to tuples
                     sales_data = [tuple(x) for x in df_sales.to_records(index=False)]
+
+                    # Insert new rows into sales table
                     batch_insert(
                         cursor,
-                        """INSERT INTO sales (`Date`, `Time`, `Item Code`, `Quantity Sold (kilo)`,
-                           `Unit Selling Price (RMB/kg)`, `Sale or Return`, `Discount (Yes/No)`)
-                           VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                        """
+                        INSERT INTO sales (`Date`, `Time`, `Item Code`, `Quantity Sold (kilo)`,
+                        `Unit Selling Price (RMB/kg)`, `Sale or Return`, `Discount (Yes/No)`)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        """,
                         sales_data
                     )
                     conn.commit()
@@ -144,6 +144,13 @@ if use_upload:
                 # ------------------ CLOSE CONNECTION ------------------
                 cursor.close()
                 conn.close()
+
+                # ------------------ Refresh Data ------------------
+                df = get_data()  # Re-load data from DB
+                st.session_state['df'] = df
+                st.session_state['daily_df'] = calculate_daily_sales(df)
+                st.session_state['kpis'] = compute_kpis(df)
+                st.experimental_rerun()  # Refresh Streamlit UI to reflect new data
 
         except Exception as e:
             st.error(f"❌ Failed to load data: {e}")

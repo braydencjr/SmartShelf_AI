@@ -3,7 +3,10 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import sys
+import os
+import pymysql
 from pathlib import Path
+from utils.kpi_calculator import calculate_daily_sales
 
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -14,18 +17,41 @@ from models.optimization import (
 )
 from models.forecasting import forecast_sales
 
+def load_data_from_db():
+    conn = pymysql.connect(
+        host=os.environ.get("MYSQL_HOST"),
+        user=os.environ.get("MYSQL_USER"),
+        password=os.environ.get("MYSQL_PASSWORD"),
+        database=os.environ.get("MYSQL_DB")
+    )
+    df = pd.read_sql(
+        "SELECT s.*, p.`Item Name`, p.`Category Name`, p.`Category Code` "
+        "FROM sales s JOIN product_info p USING(`Item Code`)", conn
+    )
+    conn.close()
+    
+    if 'TotalSales' not in df.columns:
+        df['TotalSales'] = df['Quantity Sold (kilo)'] * df['Unit Selling Price (RMB/kg)']
+    
+    df['Date'] = pd.to_datetime(df['Date'])
+    return df
+
+
 st.set_page_config(page_title="Optimization", page_icon="⚙️", layout="wide")
 
 st.title("⚙️ Operations Optimization")
 st.markdown("### Data-driven recommendations for inventory, pricing, and resource allocation")
 
 # Check for data
-if 'df' not in st.session_state:
-    st.warning("⚠️ No data loaded. Please go to the main page and load data first.")
-    if st.button("← Go to Main Page"):
-        st.switch_page("Main_Page.py")
-    st.stop()
-
+if 'df' not in st.session_state or st.session_state['df'] is None:
+    df = load_data_from_db()
+    if df is not None and not df.empty:
+        st.session_state['df'] = df
+        st.session_state['daily_df'] = calculate_daily_sales(df)
+    else:
+        st.warning("⚠️ No data available. Please load sales data first.")
+        st.stop()
+        
 df = st.session_state['df']
 daily_df = st.session_state['daily_df']
 

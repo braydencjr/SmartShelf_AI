@@ -4,6 +4,9 @@ import plotly.graph_objects as go
 import json
 from pathlib import Path
 import sys
+import os
+import pymysql
+from utils.kpi_calculator import calculate_daily_sales
 
 # Append parent directory for imports
 sys.path.append(str(Path(__file__).parent.parent))
@@ -15,17 +18,41 @@ from models.anomaly_detection import (
 )
 from ai.insights_generator import generate_anomaly_explanation, generate_anomaly_bullet_explanation
 
+def load_data_from_db():
+    try:
+        conn = pymysql.connect(
+            host=os.environ.get("MYSQL_HOST"),
+            user=os.environ.get("MYSQL_USER"),
+            password=os.environ.get("MYSQL_PASSWORD"),
+            database=os.environ.get("MYSQL_DB")
+        )
+        df = pd.read_sql(
+            "SELECT s.*, p.`Item Name`, p.`Category Name`, p.`Category Code` "
+            "FROM sales s JOIN product_info p USING(`Item Code`)", conn
+        )
+        conn.close()
+        df['Date'] = pd.to_datetime(df['Date'])  # ensure datetime
+        return df
+    except Exception as e:
+        st.error(f"Failed to load data from DB: {e}")
+        return None
+
 st.set_page_config(page_title="Anomaly Detection", page_icon="🚨", layout="wide")
 
 st.title("🚨 Anomaly Detection")
 st.markdown("### Personal AI-powered risk spotter")
 
 # Ensure data loaded
-if 'df' not in st.session_state:
-    st.warning("⚠️ No data loaded. Please go to the main page and load data first.")
-    if st.button("← Go to Main Page"):
-        st.switch_page("Main_Page.py")
-    st.stop()
+if 'df' not in st.session_state or st.session_state['df'] is None:
+    df = load_data_from_db()
+    if df is not None and not df.empty:
+        df['TotalSales'] = df['Quantity Sold (kilo)'] * df['Unit Selling Price (RMB/kg)']
+        
+        st.session_state['df'] = df
+        st.session_state['daily_df'] = calculate_daily_sales(df)
+    else:
+        st.warning("⚠️ No data available.")
+        st.stop()
 
 daily_df = st.session_state['daily_df']
 

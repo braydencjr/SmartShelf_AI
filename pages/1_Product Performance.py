@@ -18,40 +18,96 @@ from utils.discount_analysis import (
     analyze_product_discount_sensitivity, get_discount_insights_summary
 )
 
+import pymysql
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
+def load_data_from_db():
+    try:
+        conn = pymysql.connect(
+            host=os.environ.get("MYSQL_HOST"),
+            user=os.environ.get("MYSQL_USER"),
+            password=os.environ.get("MYSQL_PASSWORD"),
+            database=os.environ.get("MYSQL_DB")
+        )
+
+        query = """
+            SELECT 
+                s.*, 
+                p.`Item Name`, 
+                p.`Category Name`, 
+                p.`Category Code`,
+                (s.`Quantity Sold (kilo)` * s.`Unit Selling Price (RMB/kg)`) AS TotalSales
+            FROM sales s
+            JOIN product_info p USING(`Item Code`)
+        """
+
+        df = pd.read_sql(query, conn)
+        conn.close()
+
+        if df.empty:
+            return None
+
+        # Convert Date column to datetime if not already
+        df['Date'] = pd.to_datetime(df['Date'])
+
+        # Store session state
+        st.session_state['df'] = df
+        st.session_state['daily_df'] = calculate_daily_sales(df)
+        st.session_state['kpis'] = compute_kpis(df)
+
+        return df
+
+    except Exception as e:
+        st.error(f"❌ Failed to load data from DB: {e}")
+        return None
 
 st.set_page_config(page_title="Dashboard", page_icon="📊", layout="wide")
 
-st.title("📊 Personal Intelligence Dashboard")
+st.title("📊 Product Performance Dashboard")
 
 # Check for data
-if 'df' not in st.session_state:
-    st.warning("⚠️ No data loaded. Please go to the main page and load data first.")
-    if st.button("← Go to Main Page"):
-        st.switch_page("Main_Page.py")
-    st.stop()
+if 'df' not in st.session_state or st.session_state['df'] is None:
+    df = load_data_from_db()
+    if df is not None and not df.empty:
+        st.session_state['df'] = df
+        st.session_state['daily_df'] = calculate_daily_sales(df)
+        st.session_state['kpis'] = compute_kpis(df)
+    else:
+        st.warning("⚠️ No data available.")
+        st.stop()
 
 df = st.session_state['df']
 daily_df = st.session_state['daily_df']
 kpis = st.session_state['kpis']
 
-# Date filter
-st.sidebar.markdown("## 📅 Date Filter")
-min_date = df['Date'].min().date()
-max_date = df['Date'].max().date()
+# Create two main columns: one for the label/icon, one for the input
+filter_col, empty_col = st.columns([1, 4]) 
 
-date_range = st.sidebar.date_input(
-    "Select date range",
-    value=(min_date, max_date),
-    min_value=min_date,
-    max_value=max_date
-)
+with filter_col:
+    st.markdown("")
+    st.markdown("### 📅 Date Range")  # slightly smaller, cleaner header
 
-if len(date_range) == 2:
+with empty_col:
+    min_date = df['Date'].min().date()
+    max_date = df['Date'].max().date()
+
+    date_range = st.date_input(
+        label="",  # hide default label
+        value=(min_date, max_date),
+        min_value=min_date,
+        max_value=max_date,
+        key="main_date_filter",
+        help="Select the start and end date to filter sales"
+    )
+
+# Apply filtering
+if isinstance(date_range, tuple) and len(date_range) == 2:
     start_date, end_date = date_range
-    mask = (df['Date'].dt.date >= start_date) & (df['Date'].dt.date <= end_date)
-    df_filtered = df[mask]
+    df_filtered = df[(df['Date'].dt.date >= start_date) & (df['Date'].dt.date <= end_date)]
     daily_df_filtered = daily_df[(daily_df['Date'].dt.date >= start_date) & 
-                                   (daily_df['Date'].dt.date <= end_date)]
+                                 (daily_df['Date'].dt.date <= end_date)]
 else:
     df_filtered = df
     daily_df_filtered = daily_df

@@ -2,10 +2,13 @@ import streamlit as st
 import pandas as pd
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+import os
+import pymysql
 
 sys.path.append(str(Path(__file__).parent.parent))
 
-from utils.kpi_calculator import compute_kpis, top_products, calculate_category_performance
+from utils.kpi_calculator import calculate_daily_sales, compute_kpis, top_products, calculate_category_performance
 from models.anomaly_detection import detect_anomalies_zscore
 from ai.insights_generator import (
     generate_executive_summary,
@@ -13,17 +16,62 @@ from ai.insights_generator import (
     initialize_gemini
 )
 
+def load_data_from_db():
+    try:
+        conn = pymysql.connect(
+            host=os.environ.get("MYSQL_HOST"),
+            user=os.environ.get("MYSQL_USER"),
+            password=os.environ.get("MYSQL_PASSWORD"),
+            database=os.environ.get("MYSQL_DB")
+        )
+
+        query = """
+            SELECT 
+                s.*, 
+                p.`Item Name`, 
+                p.`Category Name`, 
+                p.`Category Code`,
+                (s.`Quantity Sold (kilo)` * s.`Unit Selling Price (RMB/kg)`) AS TotalSales
+            FROM sales s
+            JOIN product_info p USING(`Item Code`)
+        """
+
+        df = pd.read_sql(query, conn)
+        conn.close()
+
+        if df.empty:
+            return None
+
+        # Convert Date column to datetime if not already
+        df['Date'] = pd.to_datetime(df['Date'])
+
+        # Store session state
+        st.session_state['df'] = df
+        st.session_state['daily_df'] = calculate_daily_sales(df)
+        st.session_state['kpis'] = compute_kpis(df)
+
+        return df
+
+    except Exception as e:
+        st.error(f"❌ Failed to load data from DB: {e}")
+        return None
+
+
 st.set_page_config(page_title="AI Insights", page_icon="💡", layout="wide")
 
 st.title("💡 AI-Powered Business Insights")
 st.markdown("### Tailored Actionable Recommendations")
 
 # Check for data
-if 'df' not in st.session_state:
-    st.warning("⚠️ No data loaded. Please go to the main page and load data first.")
-    if st.button("← Go to Main Page"):
-        st.switch_page("Main_Page.py")
-    st.stop()
+if 'df' not in st.session_state or st.session_state['df'] is None:
+    df = load_data_from_db()
+    if df is not None and not df.empty:
+        st.session_state['df'] = df
+        st.session_state['daily_df'] = calculate_daily_sales(df)
+        st.session_state['kpis'] = compute_kpis(df)
+    else:
+        st.warning("⚠️ No data available.")
+        st.stop()
 
 df = st.session_state['df']
 kpis = st.session_state['kpis']
