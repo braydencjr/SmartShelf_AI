@@ -35,6 +35,19 @@
 - Resource allocation (Pareto analysis)
 - Implementation roadmaps
 
+## 🗄️ Data Source
+
+Initial data is loaded **directly from MySQL**.
+
+The system supports:
+- Live sales tables
+- Product master tables
+- Incremental updates over time
+
+CSV upload is optional and used only for testing.
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -316,62 +329,6 @@ st.markdown("""
 
 **All models:** 70/30 train/test split with honest validation metrics
 
-## 🐛 Troubleshooting
-
-### "No data loaded" error
-- Ensure CSV files are in the `data/` folder
-- Check file names match: `annex1.csv` and `annex2.csv`
-- Verify CSV format and column names
-
-### Gemini API errors
-- Check API key is set correctly
-- Verify API key is active at https://makersuite.google.com
-- Check internet connection
-- Ensure you're within free tier limits
-
-### Forecasting errors
-- Ensure sufficient historical data (minimum 30 days)
-- Check for missing dates in data
-- Verify numeric columns are properly formatted
-
-### Performance issues
-- Reduce date range for analysis
-- Clear cache: Click hamburger menu → Clear cache
-- Close unused browser tabs
-- Restart Streamlit server
-
-## 📈 Performance Metrics
-
-Based on typical retail data:
-- **Load Time:** < 3 seconds
-- **Forecast Generation:** 5-15 seconds
-- **Model Validation:** SARIMAX 6.1% MAPE, XGBoost 8.06%, ARIMA 11.68%
-- **Discount Analysis:** < 5 seconds (242+ products)
-- **Anomaly Detection:** 2-5 seconds
-- **AI Insights:** 10-20 seconds
-- **Dashboard Refresh:** < 1 second
-
-### Real Insights from Your Data
-- **Quantity Lift:** +26.42% (discounts drive volume)
-- **Revenue Impact:** -11.92% (but trade-off for volume)
-- **Best Discount Day:** Friday (+31.48% lift)
-- **Top Product:** Black Porcini (+45.45% volume when discounted)
-
-## 🔐 Security Notes
-
-- API keys should never be committed to Git
-- Use environment variables or secrets management
-- Implement authentication for production
-- Sanitize user inputs if adding features
-- Regular dependency updates for security patches
-
-## 🤝 Contributing
-
-This is a hackathon project, but improvements are welcome:
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
 
 ## 📄 License
 
@@ -384,27 +341,3 @@ MIT License - Feel free to use for your projects
 - **Statsmodels** - Time-series models
 - **Scikit-learn** - ML algorithms
 - **Google Gemini** - AI insights
-
-## 📞 Support
-
-For issues or questions:
-1. Check this README first
-2. Review code comments
-3. Check Streamlit documentation
-4. Open an issue on GitHub
-
-## 🎯 Next Steps
-
-After setup:
-1. Load your data
-2. Explore the dashboard
-3. Generate your first forecast
-4. Run anomaly detection
-5. Get AI insights
-6. Optimize operations
-
----
-
-**Built with ❤️ for Track 1: Enterprise Predictive Analytics**
-
-*Transform your operations with AI-powered insights!* 🚀
