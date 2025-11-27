@@ -6,39 +6,6 @@
 - Presentation Slides Link: https://drive.google.com/file/d/1i35Lfo5zqQtOv8wXly8a-c76WbNX097b/view?usp=drive_link
 - Demo Video Link: https://drive.google.com/file/d/1e2kJtP4xMIDjMJwe2EMVdtpHAzwvqhzX/view?usp=sharing
 
-## 🌟 Key Features
-
-### 📊 **Business Intelligence Dashboard**
-- Real-time KPI monitoring
-- Interactive visualizations
-- Category and product performance analysis
-- Sales heatmaps by time and day
-
-### 🔮 **Predictive Forecasting**
-- Prophet, SARIMAX models with robust train/test validation
-- 7-30 day forecasts with confidence intervals
-- 85%+ forecast accuracy** 
-
-- Enhanced AI insights with discount strategy context**
-
-### 🚨 **Anomaly Detection**
-- Machine Learning (Isolation Forest) detection
-- Pattern analysis
-- Root cause investigation
-
-### 💡 **AI-Powered Insights (Gemini)**
-- Executive summaries 
-- Custom Q&A about your data
-- Performance analysis
-- Strategic recommendations
-- Discount-aware business intelligence
-
-### ⚙️ **Operations Optimization**
-- Inventory optimization with reorder points
-- Pricing strategy recommendations
-- Resource allocation (Pareto analysis)
-- Implementation roadmaps
-
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -116,6 +83,40 @@ streamlit run Main_Page.py
 6. **Open your browser:**
    - The app will open automatically at `http://localhost:8501`
    - If not, navigate to that URL manually
+
+
+## 🌟 Key Features
+
+### 📊 **Business Intelligence Dashboard**
+- Real-time KPI monitoring
+- Interactive visualizations
+- Category and product performance analysis
+- Sales heatmaps by time and day
+
+### 🔮 **Predictive Forecasting**
+- Prophet, SARIMAX models with robust train/test validation
+- 7-30 day forecasts with confidence intervals
+- 85%+ forecast accuracy** 
+
+- Enhanced AI insights with discount strategy context**
+
+### 🚨 **Anomaly Detection**
+- Machine Learning (Isolation Forest) detection
+- Pattern analysis
+- Root cause investigation
+
+### 💡 **AI-Powered Insights (Gemini)**
+- Executive summaries 
+- Custom Q&A about your data
+- Performance analysis
+- Strategic recommendations
+- Discount-aware business intelligence
+
+### ⚙️ **Operations Optimization**
+- Inventory optimization with reorder points
+- Pricing strategy recommendations
+- Resource allocation (Pareto analysis)
+- Implementation roadmaps
 
 ## 📂 Project Structure
 
