@@ -13,9 +13,9 @@
 ### 🔮 **Predictive Forecasting**
 - Prophet, SARIMAX models with robust train/test validation
 - 7-30 day forecasts with confidence intervals
-- **85%+ forecast accuracy** 
+- 85%+ forecast accuracy** 
 
-- **Enhanced AI insights with discount strategy context**
+- Enhanced AI insights with discount strategy context**
 
 ### 🚨 **Anomaly Detection**
 - Machine Learning (Isolation Forest) detection
@@ -27,7 +27,7 @@
 - Custom Q&A about your data
 - Performance analysis
 - Strategic recommendations
-- **Discount-aware business intelligence**
+- Discount-aware business intelligence
 
 ### ⚙️ **Operations Optimization**
 - Inventory optimization with reorder points
