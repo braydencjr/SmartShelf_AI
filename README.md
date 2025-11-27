@@ -1,7 +1,9 @@
 # 🏢 SmartShelf AI - Enterprise Predictive Analytics SaaS
 
 > AI-powered predictive analytics platform for enterprise operations
-> Presentation Slides Link: https://drive.google.com/file/d/1i35Lfo5zqQtOv8wXly8a-c76WbNX097b/view?usp=drive_link
+
+## Submission Resources##
+- Presentation Slides Link: https://drive.google.com/file/d/1i35Lfo5zqQtOv8wXly8a-c76WbNX097b/view?usp=drive_link
 
 ## 🌟 Key Features
 
