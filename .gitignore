@@ -1,19 +1,15 @@
-# Environment variables
-.env
-
-# Python
+# Python cache
 __pycache__/
 *.pyc
-*.pyo
 
-# Virtual environments
+# Virtual env
 venv/
 .venv/
 env/
 
+# Env vars
+.env
+
 # macOS
 .DS_Store
 
-venv/
-*.pyc
-__pycache__/
