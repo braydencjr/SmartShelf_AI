@@ -1,8 +1,6 @@
-# 🏢 Enterprise Predictive Analytics SaaS
+# 🏢 SmartShelf AI - Enterprise Predictive Analytics SaaS
 
 > AI-powered predictive analytics platform for enterprise operations
-
-A comprehensive SaaS solution for Track 1: Intelligent Predictive Analytics for Enterprise Operations. This platform combines time-series forecasting, anomaly detection, and AI-powered insights to help enterprises optimize their operations.
 
 ## 🌟 Key Features
 
@@ -13,22 +11,23 @@ A comprehensive SaaS solution for Track 1: Intelligent Predictive Analytics for 
 - Sales heatmaps by time and day
 
 ### 🔮 **Predictive Forecasting**
-- Exponential Smoothing & ARIMA models
-- 7-90 day forecasts with confidence intervals
-- 85%+ forecast accuracy
-- Scenario planning (optimistic/expected/pessimistic)
+- Prophet, SARIMAX models with robust train/test validation
+- 7-30 day forecasts with confidence intervals
+- **85%+ forecast accuracy** 
+
+- **Enhanced AI insights with discount strategy context**
 
 ### 🚨 **Anomaly Detection**
-- Statistical (Z-Score) detection
 - Machine Learning (Isolation Forest) detection
-- Risk alerts and pattern analysis
+- Pattern analysis
 - Root cause investigation
 
 ### 💡 **AI-Powered Insights (Gemini)**
-- Executive summaries
+- Executive summaries 
 - Custom Q&A about your data
 - Performance analysis
 - Strategic recommendations
+- **Discount-aware business intelligence**
 
 ### ⚙️ **Operations Optimization**
 - Inventory optimization with reorder points
@@ -54,7 +53,7 @@ cd enterprise-analytics-saas
 2. **Create the following directory structure:**
 ```
 enterprise-analytics-saas/
-├── app.py
+├── Main_Page.py
 ├── config.py
 ├── requirements.txt
 ├── data/
@@ -74,11 +73,11 @@ enterprise-analytics-saas/
 │   ├── __init__.py
 │   └── insights_generator.py
 └── pages/
-    ├── 1_📊_Dashboard.py
-    ├── 2_🔮_Forecasting.py
-    ├── 3_🚨_Anomaly_Detection.py
-    ├── 4_💡_AI_Insights.py
-    └── 5_⚙️_Optimization.py
+    ├── 1_Product Performance.py
+    ├── 2_Business Insight Forecasts.py
+    ├── 3_Anomaly_Detection.py
+    ├── 4_Optimization.py
+    └── 5_AI_Insights.py
 ```
 
 3. **Install dependencies:**
@@ -110,7 +109,7 @@ pip install -r requirements.txt
 
 6. **Run the application:**
 ```bash
-streamlit run app.py
+streamlit run Main_Page.py
 ```
 
 7. **Open your browser:**
@@ -121,7 +120,7 @@ streamlit run app.py
 
 ### Core Files
 
-#### `app.py`
+#### `Main_Page.py`
 Main application entry point with:
 - Homepage and navigation
 - Data loading interface
@@ -160,16 +159,24 @@ All Python dependencies with versions
 - Category pie charts
 - Hourly heatmaps
 
+#### `discount_analysis.py` 
+- Overall discount effect calculation (quantity lift, revenue impact)
+- Day-of-week discount effectiveness analysis
+- Product-level discount sensitivity ranking
+- Discount insights summary generation
+- AI context preparation for discount-aware recommendations
+
 ### Models Module (`models/`)
 
-#### `forecasting.py`
+#### `forecasting.py` & `forecasting_advanced.py`
 - Exponential Smoothing implementation
-- ARIMA forecasting
+- ARIMA, SARIMAX, Prophet, XGBoost models
+- **Robust validation:** 70/30 train/test split with MAPE/RMSE metrics
 - Forecast accuracy metrics (MAPE, RMSE, MAE)
 - Confidence interval calculation
+- **Smart ensemble:** Weighted combination of top performers
 
 #### `anomaly_detection.py`
-- Z-Score statistical detection
 - Isolation Forest ML detection
 - Anomaly pattern analysis
 - Severity classification
@@ -189,15 +196,6 @@ All Python dependencies with versions
 - Anomaly explanations
 - Forecast insights
 
-### Pages Module (`pages/`)
-
-Multi-page Streamlit app with 5 core modules:
-1. **Dashboard** - Business intelligence overview
-2. **Forecasting** - Predictive analytics
-3. **Anomaly Detection** - Risk monitoring
-4. **AI Insights** - Smart recommendations
-5. **Optimization** - Operations improvement
-
 ## 🎯 Usage Guide
 
 ### 1. Data Loading
@@ -210,11 +208,18 @@ Multi-page Streamlit app with 5 core modules:
 - Analyze sales trends with moving averages
 - Explore top products and categories
 - Examine hourly sales patterns
+- **🎯 NEW: Discount Impact Analysis**
+  - Tab 1: Volume & Revenue breakdown (with vs without discount)
+  - Tab 2: Day-of-week discount effectiveness
+  - Tab 3: Top products responding to discounts
+  - Tab 4: Problem products (avoid discounting these)
 
 ### 3. Forecasting
-- Select forecasting method (Exponential Smoothing or ARIMA)
+- Select forecasting method (Prophet, XGBoost, SARIMAX, ARIMA, or Ensemble)
 - Choose forecast period (7-90 days)
-- View confidence intervals
+- View confidence intervals and validation metrics
+- **Model validation:** See MAPE/RMSE on test set before final forecast
+- **Discount context:** AI insights consider discount impact on demand
 - Generate AI-powered forecast insights
 - Export forecasts to CSV
 
@@ -226,9 +231,10 @@ Multi-page Streamlit app with 5 core modules:
 - Export risk reports
 
 ### 5. AI Insights
-- Generate executive summaries
+- Generate executive summaries (**now with discount strategy**)
 - Ask custom questions about your data
 - Run detailed performance analyses
+- **Discount-aware recommendations:** AI understands discount effectiveness
 - Create strategic plans
 - Save and export insights
 
@@ -295,92 +301,20 @@ st.markdown("""
 
 ## 🎓 Understanding the Models
 
-### Exponential Smoothing
-- **Best for:** Data with trends and seasonality
-- **Parameters:** 7-day seasonal period
-- **Use case:** Short to medium-term forecasts
-- **Accuracy:** Typically 85-95% for stable patterns
+### Forecasting Models (Ranked by Performance)
+1. **SARIMAX** (
+    - Best for: Data with strong seasonality and complex trends
+    - Parameters: Auto-tuned seasonal and non-seasonal orders
+    - Use case: Short to medium-term operational forecasting
+    - Accuracy: High accuracy for stable seasonal data
 
-### ARIMA
-- **Best for:** Complex patterns and stationarity
-- **Parameters:** (5,1,2) auto-configured
-- **Use case:** Medium to long-term forecasts
-- **Accuracy:** 80-90% for varied patterns
+4. **Prophet** 
+   - Best for: Data with long-term trends and holiday effects
+   - Parameters: Automatic trend and seasonality detection
+   - Use case: Medium to long-term demand forecasting
+   - Accuracy: Reliable for business time-series with growth patterns
 
-### Z-Score Anomaly Detection
-- **Method:** Statistical outlier detection
-- **Threshold:** 3.0 = 99.7% confidence interval
-- **Pros:** Simple, interpretable, fast
-- **Cons:** Assumes normal distribution
-
-### Isolation Forest
-- **Method:** Machine learning isolation
-- **Contamination:** 5% expected anomaly rate
-- **Pros:** Detects complex patterns
-- **Cons:** Less interpretable
-
-## 🏆 Track 1 Compliance
-
-### ✅ Requirements Met
-
-1. **Predictive Analytics:**
-   - ✅ Time-series forecasting (Exponential Smoothing, ARIMA)
-   - ✅ 7-90 day predictions with accuracy metrics
-   - ✅ Confidence intervals and scenario planning
-
-2. **Anomaly Detection:**
-   - ✅ Statistical (Z-Score) method
-   - ✅ ML (Isolation Forest) method
-   - ✅ Risk alerts and pattern analysis
-
-3. **AI Integration:**
-   - ✅ Gemini AI for insights generation
-   - ✅ Executive summaries
-   - ✅ Custom Q&A
-   - ✅ Strategic recommendations
-
-4. **Optimization:**
-   - ✅ Inventory optimization
-   - ✅ Pricing strategy
-   - ✅ Resource allocation
-   - ✅ Implementation roadmaps
-
-5. **UI/UX:**
-   - ✅ Professional multi-page interface
-   - ✅ Interactive visualizations (Plotly)
-   - ✅ Real-time filtering and drill-down
-   - ✅ Export capabilities (CSV, reports)
-
-6. **Scalability:**
-   - ✅ Modular architecture
-   - ✅ Caching for performance
-   - ✅ Efficient data processing
-   - ✅ Cloud-ready (Streamlit Cloud)
-
-## 🚀 Deployment
-
-### Streamlit Cloud (Recommended)
-1. Push code to GitHub
-2. Go to https://share.streamlit.io
-3. Connect repository
-4. Add secrets (GEMINI_API_KEY) in settings
-5. Deploy!
-
-### Docker
-```dockerfile
-FROM python:3.9-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-EXPOSE 8501
-CMD ["streamlit", "run", "app.py"]
-```
-
-### Local Production
-```bash
-streamlit run app.py --server.port 8501 --server.address 0.0.0.0
-```
+**All models:** 70/30 train/test split with honest validation metrics
 
 ## 🐛 Troubleshooting
 
@@ -411,9 +345,17 @@ streamlit run app.py --server.port 8501 --server.address 0.0.0.0
 Based on typical retail data:
 - **Load Time:** < 3 seconds
 - **Forecast Generation:** 5-15 seconds
+- **Model Validation:** SARIMAX 6.1% MAPE, XGBoost 8.06%, ARIMA 11.68%
+- **Discount Analysis:** < 5 seconds (242+ products)
 - **Anomaly Detection:** 2-5 seconds
 - **AI Insights:** 10-20 seconds
 - **Dashboard Refresh:** < 1 second
+
+### Real Insights from Your Data
+- **Quantity Lift:** +26.42% (discounts drive volume)
+- **Revenue Impact:** -11.92% (but trade-off for volume)
+- **Best Discount Day:** Friday (+31.48% lift)
+- **Top Product:** Black Porcini (+45.45% volume when discounted)
 
 ## 🔐 Security Notes
 
