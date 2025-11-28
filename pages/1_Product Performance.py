@@ -34,24 +34,32 @@ df = st.session_state['df']
 daily_df = st.session_state['daily_df']
 kpis = st.session_state['kpis']
 
-# Date filter
-st.sidebar.markdown("## 📅 Date Filter")
-min_date = df['Date'].min().date()
-max_date = df['Date'].max().date()
+# Create two main columns: one for the label/icon, one for the input
+filter_col, empty_col = st.columns([1, 4]) 
 
-date_range = st.sidebar.date_input(
-    "Select date range",
-    value=(min_date, max_date),
-    min_value=min_date,
-    max_value=max_date
-)
+with filter_col:
+    st.markdown("")
+    st.markdown("### 📅 Date Range")  # slightly smaller, cleaner header
 
-if len(date_range) == 2:
+with empty_col:
+    min_date = df['Date'].min().date()
+    max_date = df['Date'].max().date()
+
+    date_range = st.date_input(
+        label="",  # hide default label
+        value=(min_date, max_date),
+        min_value=min_date,
+        max_value=max_date,
+        key="main_date_filter",
+        help="Select the start and end date to filter sales"
+    )
+
+# Apply filtering
+if isinstance(date_range, tuple) and len(date_range) == 2:
     start_date, end_date = date_range
-    mask = (df['Date'].dt.date >= start_date) & (df['Date'].dt.date <= end_date)
-    df_filtered = df[mask]
+    df_filtered = df[(df['Date'].dt.date >= start_date) & (df['Date'].dt.date <= end_date)]
     daily_df_filtered = daily_df[(daily_df['Date'].dt.date >= start_date) & 
-                                   (daily_df['Date'].dt.date <= end_date)]
+                                 (daily_df['Date'].dt.date <= end_date)]
 else:
     df_filtered = df
     daily_df_filtered = daily_df

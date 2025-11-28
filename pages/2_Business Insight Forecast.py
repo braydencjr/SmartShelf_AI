@@ -34,330 +34,295 @@ if 'df' not in st.session_state:
 daily_df = st.session_state['daily_df']
 
 
+def forecast_st_card(title, value, subtitle=None):
+    """Render a square card for forecast metrics."""
+    CARD_BG = "#0D3B66"
+    CARD_COLOR = "#FFFFFF"
+    CARD_PADDING = "12px"
+    CARD_BORDER_RADIUS = "12px"
+    CARD_SIZE = "180px"
+    TITLE_SIZE = "13px"
+    VALUE_SIZE = "20px"
+    SUBTITLE_SIZE = "12px"
+
+    subtitle_html = f"<div style='font-size:{SUBTITLE_SIZE}; color:#E0E0E0; margin-top:6px'>{subtitle}</div>" if subtitle else ""
+
+    st.markdown(
+        f"""
+        <div style='
+            background-color: {CARD_BG};
+            color: {CARD_COLOR};
+            width: {CARD_SIZE};
+            height: {CARD_SIZE};
+            padding: {CARD_PADDING};
+            border-radius: {CARD_BORDER_RADIUS};
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 12px;
+        '>
+            <div style='font-size:{TITLE_SIZE}; opacity:0.9; margin-bottom:6px'>{title}</div>
+            <div style='font-size:{VALUE_SIZE}; font-weight:700'>{value}</div>
+            {subtitle_html}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+
+# ---------------------------
+# Controls + Right summary panel
+# ---------------------------
+# ---------------------------
+# Controls + Right summary panel
+# ---------------------------
 with st.container():
-    col1, col2 = st.columns([2,1])
+    left_col, right_col = st.columns([2, 1])
 
-    # -------------------------
-    # LEFT SIDE (SLIDER + BUTTON)
-    # -------------------------
-    with col1:
-
-        # Forecast period slider
+    # LEFT CONTROLS
+    with left_col:
         forecast_days = st.slider(
             "Forecast Period (days)",
-            min_value=1,
-            max_value=30,
-            value=7,
-            step=1
+            min_value=1, max_value=30, value=7, step=1
         )
 
-        # --- 3-column row: checkbox, checkbox, button ---
         c1, c2, c3 = st.columns([1, 1, 1.2])
-
         with c1:
-            show_confidence = st.checkbox(
-                "Show Expected Intervals",
-                value=True,
-                help="Displays a shaded area showing expected range."
-            )
-
+            show_confidence = st.checkbox("Show Expected Intervals", value=True)
         with c2:
-            show_historical = st.checkbox(
-                "Show Historical Data",
-                value=True,
-                help="Displays past sales."
-            )
-
+            show_historical = st.checkbox("Show Historical Data", value=True)
         with c3:
-            st.markdown("<div style='height: 12px'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='height: 8px'></div>", unsafe_allow_html=True)
             if st.button("🔮 Generate Forecast", type="primary", use_container_width=True):
-                with st.spinner("Generating forecast... This may take a moment."):
-                    forecast_df = optimized_sarimax_forecast(daily_df, periods=forecast_days)
+                with st.spinner("Generating forecast..."):
+                    try:
+                        forecast_df = optimized_sarimax_forecast(daily_df, periods=forecast_days)
+                        if forecast_df is None or forecast_df.empty:
+                            st.error("❌ Forecast generation returned no data.")
+                        else:
+                            st.session_state['forecast_df'] = forecast_df
+                            st.session_state['forecast_method'] = "SARIMAX"
+                            st.success("✅ Forecast generated successfully!")
+                    except Exception as e:
+                        st.error(f"❌ Forecast failed: {e}")
 
-                    if forecast_df is not None:
-                        st.session_state['forecast_df'] = forecast_df
-                        st.session_state['forecast_method'] = "SARIMAX"
-                        st.success("✅ Forecast generated successfully using SARIMAX!")
-                    else:
-                        st.error("❌ Forecast generation failed. Please check your data.")
+    # RIGHT CONTROLS - MOVED THE BORDERED BOX HERE
+   # RIGHT CONTROLS
+# RIGHT CONTROLS
+with right_col:
+    with st.container(border=True):
+        st.markdown("#### 📘 Forecast Parameter")
+        st.markdown(f"**Forecast Horizon:** {forecast_days} days")
 
-    # -------------------------
-    # RIGHT SIDE (FORECAST PARAMETER CARD)
-    # -------------------------
-    # EVERYTHING MUST BE INSIDE THIS BLOCK
-    with col2:
-        # st.markdown("<br>", unsafe_allow_html=True) # REMOVED for upward alignment
+        # --- Dynamic Accuracy / MAPE & MAE ONLY if forecast exists ---
+        if 'forecast_df' in st.session_state:
+            forecast_df = st.session_state['forecast_df']
 
-        # Native Streamlit Container for the card
-        with st.container(border=True): 
-            st.markdown("#### 📘 **Forecast Parameters**")
-            
-            # Use st.markdown or st.write for content lines
-            st.markdown(f"**Forecast Horizon:** {forecast_days} days") # Hardcoding 7 days based on image
-            st.markdown("**Confidence Interval:** 95%")
-            st.markdown("**Data Filter Applied:** All Products")
+            try:
+                # ensure enough history
+                if isinstance(daily_df, pd.DataFrame) and len(daily_df) >= 10:
+                    test_days = min(30, max(3, len(daily_df) // 3))
+                    train_df = daily_df.iloc[:-test_days]
+                    test_df = daily_df.iloc[-test_days:]
 
-            # Disclaimer 
-            st.caption("⚠️ Historical patterns do not guarantee future performance.")
-        # Removed the problematic st.markdown(html_card, ...) line
+                    acc_text = "MAPE: N/A  •  MAE: N/A"
+                    acc_interpretation = None
 
-# Display forecast
+                    if len(train_df) >= 3 and len(test_df) >= 1:
+                        test_forecast = optimized_sarimax_forecast(train_df, periods=len(test_df))
+                        if test_forecast is not None and len(test_forecast) == len(test_df):
+                            accuracy = calculate_forecast_accuracy(
+                                test_df['daily_sales'].values,
+                                test_forecast['forecasted_sales'].values
+                            )
+                            mape = accuracy.get('MAPE', None)
+                            mae = accuracy.get('MAE', None)
+
+                            if isinstance(mape, (float, int)) and isinstance(mae, (float, int)):
+                                acc_text = f"MAPE: {mape:.2f}%  •  MAE: ¥{mae:.2f}"
+
+                                # optional interpretation
+                                if mape < 10:
+                                    acc_interpretation = ("🎯 Excellent accuracy — model performs very well.", "success")
+                                elif mape < 20:
+                                    acc_interpretation = ("✅ Good accuracy — reliable for planning.", "info")
+                                elif mape < 30:
+                                    acc_interpretation = ("⚠️ Moderate accuracy — use with caution.", "warning")
+                                else:
+                                    acc_interpretation = ("❌ Low accuracy — consider more data or different parameters.", "error")
+
+                    # display accuracy
+                    st.markdown(acc_text)
+                    if acc_interpretation:
+                        text, level = acc_interpretation
+                        if level == "success":
+                            st.success(text)
+                        elif level == "info":
+                            st.info(text)
+                        elif level == "warning":
+                            st.warning(text)
+                        else:
+                            st.error(text)
+                else:
+                    st.caption("Not enough historical data to compute accuracy.")
+            except Exception as e:
+                st.warning(f"Could not compute accuracy: {e}")
+        else:
+            st.caption("Forecast not yet generated. Press 🔮 Generate Forecast.")
+
+        
+# ---------------------------
+# Forecast cards + visualization
+# ---------------------------
 if 'forecast_df' in st.session_state:
     forecast_df = st.session_state['forecast_df']
     method = st.session_state.get('forecast_method', 'Unknown')
-    
-    # Metrics
+
     st.markdown("## 📊 Forecast Summary")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric(
-            "Forecast Period",
-            f"{len(forecast_df)} days",
-            delta=f"{forecast_df['Date'].min().date()} to {forecast_df['Date'].max().date()}"
-        )
-    
-    with col2:
-        st.metric(
-            "Avg Forecasted Sales",
-            f"¥{forecast_df['forecasted_sales'].mean():,.2f}",
-            delta=f"{((forecast_df['forecasted_sales'].mean() / daily_df['daily_sales'].mean() - 1) * 100):+.1f}% vs historical"
-        )
-    
-    with col3:
-        st.metric(
-            "Total Forecasted Revenue",
-            f"¥{forecast_df['forecasted_sales'].sum():,.2f}",
-            delta="Projected"
-        )
-    
-    with col4:
-        st.metric(
-            "Method Used",
-            method,
-            delta="AI Model"
-        )
-    
-    # Visualization
+
+    # Compute metrics
+    try:
+        forecast_period = f"{len(forecast_df)} days"
+        forecast_period_subtitle = f"{forecast_df['Date'].min().date()} to {forecast_df['Date'].max().date()}"
+    except Exception:
+        forecast_period = f"{len(forecast_df)} days"
+        forecast_period_subtitle = ""
+
+    try:
+        avg_sales_val = float(forecast_df['forecasted_sales'].mean())
+        avg_sales = f"¥{avg_sales_val:,.2f}"
+        avg_sales_subtitle = f"{((avg_sales_val / daily_df['daily_sales'].mean() - 1) * 100):+.1f}% vs historical"
+    except Exception:
+        avg_sales = "N/A"
+        avg_sales_subtitle = None
+
+    try:
+        total_rev_val = float(forecast_df['forecasted_sales'].sum())
+        total_revenue = f"¥{total_rev_val:,.2f}"
+    except Exception:
+        total_revenue = "N/A"
+    total_revenue_subtitle = "Projected"
+
+    try:
+        min_forecast = f"¥{float(forecast_df['forecasted_sales'].min()):,.2f}"
+        max_forecast = f"¥{float(forecast_df['forecasted_sales'].max()):,.2f}"
+        std_dev = f"¥{float(forecast_df['forecasted_sales'].std()):,.2f}"
+        trend = "Upward 📈" if forecast_df['forecasted_sales'].iloc[-1] > forecast_df['forecasted_sales'].iloc[0] else "Downward 📉"
+    except Exception:
+        min_forecast = max_forecast = std_dev = trend = "N/A"
+
+    metrics = [
+        ("Forecast Period", forecast_period, forecast_period_subtitle),
+        ("Total Forecasted Revenue", total_revenue, total_revenue_subtitle),
+        ("Avg Forecasted Sales", avg_sales, avg_sales_subtitle),
+        ("Min Forecast", min_forecast, None),
+        ("Max Forecast", max_forecast, None),
+        ("Trend", trend, None)
+    ]
+
+    cols_per_row = 3
+    for i in range(0, len(metrics), cols_per_row):
+        row = metrics[i:i + cols_per_row]
+        cols = st.columns(len(row))
+        for col, (title, value, subtitle) in zip(cols, row):
+            with col:
+                forecast_st_card(title, value, subtitle)
+
+    # ---------------- Visualization ----------------
     st.markdown("## 📈 Forecast Visualization")
-    
     fig = go.Figure()
-    
-    # Historical data
+
     if show_historical:
         fig.add_trace(go.Scatter(
             x=daily_df['Date'],
             y=daily_df['daily_sales'],
             mode='lines',
             name='Historical Sales',
-            line=dict(color='#667eea', width=2)
+            line=dict(width=2)
         ))
-    
-    # Forecast
+
     fig.add_trace(go.Scatter(
         x=forecast_df['Date'],
         y=forecast_df['forecasted_sales'],
         mode='lines',
         name='Forecasted Sales',
-        line=dict(color='#f093fb', width=3, dash='dash')
+        line=dict(width=3, dash='dash')
     ))
-    
-    # Confidence intervals
-    if show_confidence:
+
+    if show_confidence and 'upper_bound' in forecast_df.columns and 'lower_bound' in forecast_df.columns:
         fig.add_trace(go.Scatter(
             x=forecast_df['Date'],
             y=forecast_df['upper_bound'],
             mode='lines',
-            name='Upper Bound',
             line=dict(width=0),
             showlegend=False
         ))
-        
         fig.add_trace(go.Scatter(
             x=forecast_df['Date'],
             y=forecast_df['lower_bound'],
             mode='lines',
-            name='Lower Bound',
             line=dict(width=0),
-            fillcolor='rgba(240, 147, 251, 0.2)',
             fill='tonexty',
-            showlegend=True
+            fillcolor='rgba(240,147,251,0.15)',
+            name='Confidence'
         ))
-    
-    fig.update_layout(
-        title=f'Sales Forecast - {method}',
-        xaxis_title='Date',
-        yaxis_title='Sales (RMB)',
-        hovermode='x unified',
-        template='plotly_white',
-        height=500
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Forecast accuracy (using last 30 days as test)
-    st.markdown("## 🎯 Model Performance")
-    
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.markdown("### Accuracy Metrics")
-        
-        # Calculate accuracy on last 30 days
-        test_days = min(30, len(daily_df) // 3)
-        train_df = daily_df.iloc[:-test_days]
-        test_df = daily_df.iloc[-test_days:]
-        
-        try:
-            if method == "Smart Ensemble":
-                test_forecast = smart_ensemble_forecast(train_df, periods=test_days)
-            elif method == "Prophet":
-                test_forecast = prophet_forecast(train_df, periods=test_days)
-            elif method == "XGBoost":
-                test_forecast = xgboost_forecast(train_df, periods=test_days)
-            elif method == "SARIMAX":
-                test_forecast = optimized_sarimax_forecast(train_df, periods=test_days)
-            
-            
-            if test_forecast is not None and len(test_forecast) == len(test_df):
-                accuracy = calculate_forecast_accuracy(
-                    test_df['daily_sales'].values,
-                    test_forecast['forecasted_sales'].values
-                )
-                
-                col_a, col_b, col_c = st.columns(3)
-                
-                with col_a:
-                    st.metric("MAPE", f"{accuracy['MAPE']:.2f}%", help="Mean Absolute Percentage Error")
-                
-                with col_b:
-                    st.metric("RMSE", f"¥{accuracy['RMSE']:.2f}", help="Root Mean Square Error")
-                
-                with col_c:
-                    st.metric("MAE", f"¥{accuracy['MAE']:.2f}", help="Mean Absolute Error")
-                
-                # Accuracy interpretation
-                if accuracy['MAPE'] < 10:
-                    st.success("🎯 Excellent forecast accuracy! Model performs very well.")
-                elif accuracy['MAPE'] < 20:
-                    st.info("✅ Good forecast accuracy. Reliable for planning.")
-                elif accuracy['MAPE'] < 30:
-                    st.warning("⚠️ Moderate accuracy. Use with caution for critical decisions.")
-                else:
-                    st.error("❌ Low accuracy. Consider more data or different parameters.")
-        
-        except Exception as e:
-            st.warning(f"Could not calculate accuracy metrics: {e}")
-    
-    with col2:
-        st.markdown("### 📊 Forecast Statistics")
-        st.metric("Min Forecast", f"¥{forecast_df['forecasted_sales'].min():,.2f}")
-        st.metric("Max Forecast", f"¥{forecast_df['forecasted_sales'].max():,.2f}")
-        st.metric("Std Deviation", f"¥{forecast_df['forecasted_sales'].std():,.2f}")
-        st.metric("Trend", 
-                 "Upward 📈" if forecast_df['forecasted_sales'].iloc[-1] > forecast_df['forecasted_sales'].iloc[0] 
-                 else "Downward 📉")
-    st.markdown("---")
-    # AI Insights
-    st.markdown("## 💡 AI-Powered Insights")
 
+    fig.update_layout(
+        title=f"Sales Forecast - {method}",
+        xaxis_title="Date",
+        yaxis_title="Sales (RMB)",
+        template="plotly_white",
+        hovermode="x unified",
+        height=520
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("---")
 if 'forecast_df' in st.session_state:
     forecast_df = st.session_state['forecast_df']
     daily_df = st.session_state['daily_df']
 
+    # --- AI insights header ---
+    st.markdown("## 💡 AI-Powered Insights")
+
+    # --- Button inside the section ---
     if st.button("Generate AI Analysis", type="primary"):
+        with st.spinner("AI is analyzing the forecast..."):
+            try:
+                ai_response = generate_forecast_insights(
+                    forecast_df,
+                    daily_df['daily_sales'].mean(),
+                    df=st.session_state.get('df', None)
+                )
 
-    # 1️⃣ Show the forecast chart first
-     fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=forecast_df['Date'],
-        y=forecast_df['forecasted_sales'],
-        mode='lines+markers',
-        name='Forecasted Sales'
-    ))
-    fig.update_layout(height=300, margin=dict(t=20, b=20, l=20, r=20))
-    st.plotly_chart(fig, use_container_width=True)
+                if not ai_response:
+                    st.error("AI returned an empty response.")
+                else:
+                    # Display clean text (not JSON)
+                    st.markdown(ai_response)
 
-    # 2️⃣ Call AI for bullet points
-    with st.spinner("AI is analyzing the forecast..."):
-        ai_response = generate_forecast_insights(
-            forecast_df,
-            daily_df['daily_sales'].mean(),
-            df=st.session_state.get('df', None)
-        )
-
-        if ai_response:
-            ai_response = ai_response.strip()
-            if ai_response.startswith("```") and ai_response.endswith("```"):
-                ai_response = '\n'.join(ai_response.split('\n')[1:-1]).strip()
-
-        # 3️⃣ Parse JSON safely
-        bullets_data = []
-        try:
-            raw_data = json.loads(ai_response)
-
-            # Normalize: ensure each item is a dict with required keys
-            for item in raw_data:
-                if isinstance(item, dict):
-                    bullets_data.append({
-                        "bullet": item.get("text", "Legacy Insight"),
-                        "category": item.get("category", "Insight"),
-                        "graph_suggestion": item.get("graph_suggestion", "Full Forecast")
-                    })
-                elif isinstance(item, str):
-                    bullets_data.append({
-                        "bullet": item,
-                        "category": "Insight",
-                        "graph_suggestion": "Full Forecast"
-                    })
-        except json.JSONDecodeError:
-            st.error("❌ AI returned invalid JSON.")
-            st.code(ai_response, language='json')
-            bullets_data = []
-
-        # 4️⃣ Display bullets
-        for bullet_item in bullets_data:
-            bullet_text = bullet_item["bullet"]
-            bullet_category = bullet_item["category"]
-            bullet_graph = bullet_item["graph_suggestion"]
-
-            icon = {
-                "Observation": "👁️",
-                "Potential Risk": "⚠️",
-                "Recommended Action": "🚀",
-                "Fallback": "💬",
-                "Error": "❌",
-                "Insight": "💡"
-            }.get(bullet_category, "💡")
-
-            with st.expander(f"{icon} **{bullet_category}**: {bullet_text} 🔍"):
-                detailed_explanation = generate_custom_explanation(bullet_text, forecast_df)
-                st.markdown(detailed_explanation)
-                st.markdown("---")
+            except Exception as e:
+                st.error(f"AI analysis failed: {e}")
 
 
     st.markdown("---")
-    # Forecast table
     st.markdown("## 📋 Detailed Forecast Data")
-    
     with st.expander("View Forecast Table"):
         st.dataframe(forecast_df, use_container_width=True)
-        
         csv = forecast_df.to_csv(index=False)
-        st.download_button(
-            "📥 Download Forecast CSV",
-            csv,
-            "sales_forecast.csv",
-            "text/csv",
-            use_container_width=True
-        )
-    
+        st.download_button("📥 Download Forecast CSV", csv, "sales_forecast.csv", "text/csv", use_container_width=True)
+
+else:
+    st.info("No forecast available. Press 'Generate Forecast' to create one.")
 
 # Footer
 st.markdown("---")
 st.markdown("""
-<div style='text-align: center; color: #666;'>
-    <p>Forecasts are based on historical patterns and should be used as guidance alongside business judgment</p>
+<div style='text-align:center; color:#666'>
+    <p>Forecasts are based on historical patterns and should be used as guidance alongside business judgement.</p>
 </div>
 """, unsafe_allow_html=True)
