@@ -112,8 +112,10 @@ def generate_forecast_insights(forecast_df, historical_avg, df=None):
             discount_context = ""
 
     prompt = f"""
-Summarize this sales forecast in short bullet points with explanations for each bullet:
+Provide a clean, readable **plain text summary** of this sales forecast.
+Use short bullet points and avoid JSON entirely.
 
+Sales data:
 - Historical daily sales: ¥{historical_avg:,.2f}
 - Forecast period: {len(forecast_df)} days
 - Forecasted daily sales (sample): {forecast_df['forecasted_sales'].head(10).tolist()} ... {forecast_df['forecasted_sales'].tail(10).tolist()}
@@ -121,25 +123,35 @@ Summarize this sales forecast in short bullet points with explanations for each 
 - Min/Max forecast: ¥{forecast_df['forecasted_sales'].min():,.2f} / ¥{forecast_df['forecasted_sales'].max():,.2f}
 {discount_context}
 
-Instructions for AI:
-1. Provide 3–5 key bullet points.
-2. Each bullet should have:
-   - "text": concise description of trend/risk/action (with emojis like ⬆️⬇️⚠️📈📉)
-   - "explanation": 1–2 sentence detailed explanation
-   - "graph_suggestion": optional hint for a graph
-3. Return output in JSON format.
-4. Make it concise, actionable, and easy to read. End each bullet with "(Click for explanation)".
-5.Dont talk to much on promotion and discount, include other factors which will affect the sales and business operations.
-6.Format your response for easy reading:
-   - Use **bold** or *italic* to emphasize key points
-   - Use tables for comparisons or numeric summaries
-   - Use short bullets for lists (max 3 sentences per bullet)
-7.Avoid duplicatate points and summary.
+Instructions:
+1. Provide **3–5 key bullet points**.
+2. Each bullet should include:
+   - A **main insight** (with emojis like 📈📉⚠️)
+   - A short explanation (1–2 sentences max).
+3. **Do NOT return JSON.**  
+4. Focus on a variety of operational/business factors:
+   - demand shifts
+   - seasonality
+   - supply constraints
+   - stock issues
+   - staffing/capacity
+   - weather
+   - competitor activity
+   (Avoid over-focusing on discounts.)
+5. Use **bold** or *italic* emphasis where helpful.
+6. Avoid duplicated points and avoid writing a summary section.
 """
 
     try:
         response = model.generate_content(prompt)
-        return response.text
+        text_output = response.text.strip()
+
+        # Remove accidental code fences
+        if text_output.startswith("```") and text_output.endswith("```"):
+            text_output = "\n".join(text_output.split("\n")[1:-1]).strip()
+
+        return text_output
+
     except Exception as e:
         return f"Error generating forecast insights: {e}"
 
