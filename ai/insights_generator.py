@@ -39,20 +39,52 @@ def generate_executive_summary(kpis, top_products, anomalies, df=None):
     Anomalies Detected: {len(anomalies)} unusual sales days
     '''
     
-    prompt = f'''
-    You are a business analytics expert. Based on the following data, provide:
-    1. Executive summary (2-3 sentences)
-    2. Key insights (3-4 bullet points)
-    3. Actionable recommendations (3 specific actions)
-    4.Format your response for easy reading:
-   - Use **bold** or *italic* to emphasize key points
-   - Use tables for comparisons or numeric summaries
-   - Use short bullets for lists (max 3 sentences per bullet)
-    
-    {context}
-    
-    Format your response in markdown with clear sections.
-    '''
+    prompt = f"""
+You are a senior retail data analyst. 
+Your job is to give **sharp, numeric, actionable** insights — no generic advice.
+
+### REQUIRED OUTPUT FORMAT (must follow exactly):
+
+## Executive Summary (2–3 sentences)
+- Briefly describe performance using numbers from the data.
+
+## 📌 Key Insights (3–5 bullets, each MUST contain numbers)
+Each bullet MUST include:
+- A % change, difference, or a specific quantity
+- A comparison vs average or top items
+- A clear interpretation (no fluff)
+
+Examples:
+- "Sales spiked **+28%** above the 7-day average."
+- "Top product contributes **34%** of total revenue."
+
+## 🎯 Actionable Recommendations (3 items, each MUST be numeric)
+Each recommendation MUST include:
+- A % adjustment or exact quantity change  
+- A threshold to act on  
+- A direct operational instruction  
+
+Examples:
+- "Increase inventory of top 3 SKUs by **+15%** on weekends."
+- "Reduce ordering of slow-moving items by **10–18%**."
+- "Investigate 12 anomaly days where sales dropped **>25%** below expected."
+
+## 📊 (Optional) Table Summary
+Include a small table comparing:
+- Top 5 products
+- Their total sales
+- Their contribution %
+
+### DATA CONTEXT:
+{context}
+
+### STRICT RULES:
+- No vague business advice.
+- No generic statements like "optimize inventory".
+- Every insight MUST reference a number, percentage, or threshold.
+- Keep bullets short and punchy.
+- Output must be Markdown formatted.
+"""
     
     try:
         response = model.generate_content(prompt)
