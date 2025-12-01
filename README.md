@@ -5,7 +5,6 @@
 ## Submission Resources
 - Presentation Slides Link: https://drive.google.com/file/d/1i35Lfo5zqQtOv8wXly8a-c76WbNX097b/view?usp=drive_link
 - Demo Video Link: https://drive.google.com/file/d/1w_kZ8Gh_U9nNy0oT0vECGOlnDj-L6Y0g/view?usp=drive_link
-- App Link (Deployed): https://smartshelf-ai.streamlit.app/
 
 ## 🚀 Quick Start
 
